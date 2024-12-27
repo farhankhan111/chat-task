@@ -40,7 +40,7 @@
                             <h3>Lets chat {{ receiver?.name }}</h3>
                         </div>
 
-                        <div class="messages">
+                        <div class="messages" ref="chatbox">
                             <div
                                 class="message"
                                 v-for="message in messages"
@@ -67,7 +67,7 @@
 
 <script setup>
 import axios from "axios";
-import {ref, watch} from "vue";
+import {nextTick, ref, watch} from "vue";
 
 const email = ref('');
 const password = ref('');
@@ -82,24 +82,30 @@ const receiver = ref('');
 
 watch(userId, (newUserId) => {
     if (newUserId) {
-        window.Echo.channel(`chat-${newUserId}`).listen('MessageSent', (event) => {
-            receiverId.value = event.data.sender_id
-            messages.value.push({
-                sender: event.data.sender_id,
-                text: event.data.message,
-            });
-        });
+        startListner(newUserId)
     }
-});
+})
 
-/*const triggerChat = () => {
-    window.Echo.channel(`chat-${this.userId}`).listen('MessageSent', (event) => {
-        this.messages.push({
-            sender: event.data.sender,
+watch(messages, () => {
+    scrollToBottom();
+})
+
+const startListner = (newUserId) => {
+    window.Echo.channel(`chat-${newUserId}`).listen('MessageSent', (event) => {
+        receiverId.value = event.data.sender_id
+        messages.value = [...messages.value, {
+            sender: event.data.sender_id,
             text: event.data.message,
-        });
+        }];
     });
-}*/
+}
+
+const scrollToBottom = () => {
+    nextTick(() => {
+        const chatContainer = document.querySelector('.messages');
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    });
+}
 const setReceiverId = (user) => {
     receiverId.value = user.id;
     receiver.value = user;
@@ -161,10 +167,10 @@ const sendMessage = async () => {
         );
 
         if (response.data.success) {
-            messages.value.push({
+            messages.value = [...messages.value, {
                 sender: userId.value,
                 text: newMessage.value,
-            });
+            }];
 
             newMessage.value = '';
 
@@ -175,15 +181,6 @@ const sendMessage = async () => {
         // this.error = "Login failed.";
     }
 }
-
-
-/*watch: {
-    userId(newId) {
-        if (newId) {
-            this.triggerChat();
-        }
-    },
-},*/
 
 </script>
 
