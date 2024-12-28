@@ -14,3 +14,5 @@ Route::post('/login', [UserController::class, 'login']);
 Route::post('/users', [UserController::class, 'index']);
 Route::post('/sendSms', [SmsController::class, 'store']);
 
+Route::post('/get-user-messages', [UserController::class, 'getUserMessages']);
+

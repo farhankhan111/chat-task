@@ -93,10 +93,15 @@ watch(messages, () => {
 const startListner = (newUserId) => {
     window.Echo.channel(`chat-${newUserId}`).listen('MessageSent', (event) => {
         receiverId.value = event.data.sender_id
-        messages.value = [...messages.value, {
-            sender: event.data.sender_id,
-            text: event.data.message,
-        }];
+
+        if(messages.value.length > 0){
+            messages.value = [...messages.value, {
+                sender: event.data.sender_id,
+                text: event.data.message,
+            }]
+        }else{
+            getUserMessages(event.data.sender_id);
+        }
     });
 }
 
@@ -109,7 +114,36 @@ const scrollToBottom = () => {
 const setReceiverId = (user) => {
     receiverId.value = user.id;
     receiver.value = user;
+    getUserMessages(receiverId.value);
+
 }
+
+const getUserMessages = async (receiverId) => {
+    try {
+        const response = await axios.post("http://localhost:8000/api/get-user-messages",
+            {
+                'receiver_id': receiverId
+            },
+            {
+            headers: {Authorization: `Bearer ${token.value}`}
+        });
+
+        if (response.data.success) {
+            messages.value = [];
+            response.data.messages.forEach(message => {
+                messages.value.push({
+                    sender: message.sender_id,
+                    text: message.message,
+                });
+            });
+        } else {
+            // error.value = response.data.message;
+        }
+    } catch (err) {
+        this.error = "";
+    }
+}
+
 const getUsers = async () => {
     try {
         const response = await axios.post("http://localhost:8000/api/users", {}, {
